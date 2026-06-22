@@ -1,6 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 // Protected routes per the App Flow doc: /chat and /analytics require auth.
+// Everything else (/, /home, /sign-in, /sign-up, aliases) stays public.
 const isProtectedRoute = createRouteMatcher(["/chat(.*)", "/analytics(.*)"]);
 
 export default clerkMiddleware(async (auth, req) => {
@@ -13,7 +14,8 @@ export const config = {
   matcher: [
     // Skip Next.js internals and static files
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Always run for API routes
+    // Always run for API routes, then Clerk's auto-proxy path
     "/(api|trpc)(.*)",
+    "/__clerk/:path*",
   ],
 };
