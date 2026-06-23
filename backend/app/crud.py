@@ -7,7 +7,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import ChatSession, Message, UploadedFile, User
+from app.models import ChatSession, MemorySummary, Message, UploadedFile, User
 
 
 def create_session(db: Session, user: User, title: str | None = None) -> ChatSession:
@@ -59,3 +59,53 @@ def list_sessions_with_counts(db: Session, user: User) -> list[dict]:
     return [
         {"session": s, "message_count": m, "file_count": f} for s, m, f in rows
     ]
+
+
+# ---- Conversation memory (Milestone 5) ----
+
+def recent_messages(db: Session, session_id: uuid.UUID, limit: int = 6) -> list[Message]:
+    """Return the last `limit` messages for a session, in chronological order."""
+    rows = db.scalars(
+        select(Message)
+        .where(Message.session_id == session_id)
+        .order_by(Message.created_at.desc())
+        .limit(limit)
+    ).all()
+    return list(reversed(rows))
+
+
+def all_messages(db: Session, session_id: uuid.UUID) -> list[Message]:
+    return list(
+        db.scalars(
+            select(Message)
+            .where(Message.session_id == session_id)
+            .order_by(Message.created_at)
+        ).all()
+    )
+
+
+def count_messages(db: Session, session_id: uuid.UUID) -> int:
+    return int(
+        db.scalar(
+            select(func.count()).select_from(Message).where(Message.session_id == session_id)
+        )
+        or 0
+    )
+
+
+def get_latest_memory(db: Session, session_id: uuid.UUID) -> MemorySummary | None:
+    return db.scalar(
+        select(MemorySummary)
+        .where(MemorySummary.session_id == session_id)
+        .order_by(MemorySummary.summary_version.desc())
+    )
+
+
+def add_memory_summary(
+    db: Session, session_id: uuid.UUID, text: str, version: int
+) -> MemorySummary:
+    summary = MemorySummary(session_id=session_id, summary_text=text, summary_version=version)
+    db.add(summary)
+    db.commit()
+    db.refresh(summary)
+    return summary

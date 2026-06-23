@@ -40,11 +40,35 @@ class Answer:
 
 
 _SYSTEM_PROMPT = """You are SmartDocZ, a document assistant. Answer the user's \
-question using ONLY the provided context from their uploaded document. \
-If the context does not contain the answer, say you could not find it in the \
-document — do not invent facts. Be concise and cite page numbers where helpful."""
+question using ONLY the provided document context. Use the conversation memory \
+and recent turns to resolve references (e.g. what "it" refers to), but never \
+invent facts that are not in the document context. If the context does not \
+contain the answer, say you could not find it in the document. Be concise and \
+cite page numbers where helpful."""
 
 _NO_CONTEXT = "I could not find relevant information in the uploaded documents."
+
+
+def _retrieval_query(question: str, history: list[tuple[str, str]] | None) -> str:
+    """Enrich the vector-search query with recent user turns so follow-ups
+    (pronouns, "compare it with…") retrieve the earlier subject too."""
+    if not history:
+        return question
+    recent_user = [content for role, content in history if role == "user"][-2:]
+    return " ".join([*recent_user, question]) if recent_user else question
+
+
+def _format_history(history: list[tuple[str, str]] | None) -> str:
+    if not history:
+        return ""
+    lines = "\n".join(f"{role}: {content}" for role, content in history)
+    return f"\n=== Recent conversation ===\n{lines}\n"
+
+
+def _format_memory(memory_summary: str | None) -> str:
+    if not memory_summary:
+        return ""
+    return f"\n=== Conversation memory ===\n{memory_summary}\n"
 
 
 def ingest_documents(
@@ -74,17 +98,36 @@ def ingest_file(
     return ingest_documents(docs, user_id=user_id, session_id=session_id, file_id=file_id)
 
 
-def _build_prompt(question: str, contexts: list[str]) -> str:
+def _build_prompt(
+    question: str,
+    contexts: list[str],
+    history: list[tuple[str, str]] | None,
+    memory_summary: str | None,
+) -> str:
     joined = "\n\n".join(f"[Context {i + 1}]\n{c}" for i, c in enumerate(contexts))
     return (
-        f"{_SYSTEM_PROMPT}\n\n=== Document context ===\n{joined}\n\n"
-        f"=== Question ===\n{question}\n\n=== Answer ==="
+        f"{_SYSTEM_PROMPT}\n"
+        f"{_format_memory(memory_summary)}"
+        f"{_format_history(history)}"
+        f"\n=== Document context ===\n{joined}\n\n"
+        f"=== Current question ===\n{question}\n\n=== Answer ==="
     )
 
 
-def answer_question(question: str, *, session_id: uuid.UUID) -> Answer:
-    """Retrieve top-K chunks for the session and generate a grounded answer."""
-    docs = vectorstore.search(question, session_id=session_id, k=settings.retrieval_top_k)
+def answer_question(
+    question: str,
+    *,
+    session_id: uuid.UUID,
+    history: list[tuple[str, str]] | None = None,
+    memory_summary: str | None = None,
+) -> Answer:
+    """Retrieve top-K chunks (query enriched with recent turns) and generate a
+    grounded answer, with conversation memory injected for reference resolution."""
+    docs = vectorstore.search(
+        _retrieval_query(question, history),
+        session_id=session_id,
+        k=settings.retrieval_top_k,
+    )
 
     if not docs:
         # No retrieval hits → don't call the LLM; return the documented empty state.
@@ -100,5 +143,5 @@ def answer_question(question: str, *, session_id: uuid.UUID) -> Answer:
         )
         for d in docs
     ]
-    result = generate(_build_prompt(question, contexts))
+    result = generate(_build_prompt(question, contexts, history, memory_summary))
     return Answer(text=result.text, sources=sources, has_context=True, llm=result)
