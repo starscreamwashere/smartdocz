@@ -17,3 +17,7 @@ langchain-google-genai>=4.0,<5.0
 langchain-chroma>=1.0,<2.0
 chromadb>=1.5,<2.0
 pypdf>=6.0,<7.0
+
+# ---- Milestone 4: multi-format loaders ----
+docx2txt>=0.9,<1.0
+youtube-transcript-api>=1.2,<2.0

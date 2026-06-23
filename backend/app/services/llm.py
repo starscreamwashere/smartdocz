@@ -13,7 +13,7 @@ from functools import lru_cache
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 from app.config import get_settings
-from app.services.embeddings import MissingApiKeyError, ProviderError
+from app.services.embeddings import MissingApiKeyError, ProviderError, retry_on_quota
 
 
 @dataclass
@@ -42,9 +42,11 @@ def generate(prompt: str) -> LLMResult:
     settings = get_settings()
     started = time.perf_counter()
     try:
-        response = _client().invoke(prompt)
+        response = retry_on_quota(lambda: _client().invoke(prompt))
     except MissingApiKeyError:
         raise
+    except ProviderError:
+        raise  # includes QuotaExceededError
     except Exception as exc:  # provider/network failure during generation
         raise ProviderError(f"Generation failed: {exc}") from exc
     latency_ms = int((time.perf_counter() - started) * 1000)

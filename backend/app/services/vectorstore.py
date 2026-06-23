@@ -17,7 +17,12 @@ from langchain_chroma import Chroma
 from langchain_core.documents import Document
 
 from app.config import get_settings
-from app.services.embeddings import MissingApiKeyError, ProviderError, get_embeddings
+from app.services.embeddings import (
+    MissingApiKeyError,
+    ProviderError,
+    QuotaExceededError,
+    get_embeddings,
+)
 
 
 @lru_cache
@@ -37,7 +42,7 @@ def add_chunks(chunks: list[Document], *, file_id: uuid.UUID) -> int:
     ids = [f"{file_id}_{c.metadata['chunk_index']}" for c in chunks]
     try:
         _store().add_documents(documents=chunks, ids=ids)
-    except MissingApiKeyError:
+    except (MissingApiKeyError, QuotaExceededError):
         raise
     except Exception as exc:  # provider/network failure during embedding
         raise ProviderError(f"Embedding failed: {exc}") from exc
@@ -50,7 +55,7 @@ def search(query: str, *, session_id: uuid.UUID, k: int) -> list[Document]:
         return _store().similarity_search(
             query, k=k, filter={"session_id": str(session_id)}
         )
-    except MissingApiKeyError:
+    except (MissingApiKeyError, QuotaExceededError):
         raise
     except Exception as exc:
         raise ProviderError(f"Retrieval failed: {exc}") from exc
