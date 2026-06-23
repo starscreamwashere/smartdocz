@@ -17,6 +17,47 @@ export interface ApiUser {
   updated_at: string;
 }
 
+export interface ApiFile {
+  id: string;
+  session_id: string;
+  filename: string;
+  file_type: string;
+  file_size_mb: number | null;
+  upload_status: string;
+  created_at: string;
+}
+
+export interface UploadResult {
+  file: ApiFile;
+  session_id: string;
+  chunks_stored: number;
+}
+
+export interface Source {
+  page_number: number;
+  chunk_index: number;
+  snippet: string;
+}
+
+export interface ChatResult {
+  session_id: string;
+  message_id: string;
+  answer: string;
+  sources: Source[];
+  has_context: boolean;
+  model_provider: string;
+  model: string;
+}
+
+export interface ApiMessage {
+  id: string;
+  session_id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  model_provider: string | null;
+  created_at: string;
+}
+
 async function request<T>(
   path: string,
   token: string | null,
@@ -44,7 +85,45 @@ async function request<T>(
   return res.json() as Promise<T>;
 }
 
+async function uploadRequest<T>(
+  path: string,
+  token: string,
+  form: FormData,
+): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` }, // no Content-Type: let the browser set the multipart boundary
+    body: form,
+  });
+  if (!res.ok) {
+    let detail = res.statusText;
+    try {
+      detail = (await res.json()).detail ?? detail;
+    } catch {
+      /* non-JSON */
+    }
+    throw new Error(`${res.status}: ${detail}`);
+  }
+  return res.json() as Promise<T>;
+}
+
 export const api = {
   health: () => request<{ status: string }>("/health", null),
   me: (token: string) => request<ApiUser>("/me", token),
+
+  upload: (token: string, file: File, sessionId?: string) => {
+    const form = new FormData();
+    form.append("file", file);
+    if (sessionId) form.append("session_id", sessionId);
+    return uploadRequest<UploadResult>("/upload", token, form);
+  },
+
+  chat: (token: string, sessionId: string, message: string) =>
+    request<ChatResult>("/chat", token, {
+      method: "POST",
+      body: JSON.stringify({ session_id: sessionId, message }),
+    }),
+
+  messages: (token: string, sessionId: string) =>
+    request<ApiMessage[]>(`/messages/${sessionId}`, token),
 };

@@ -9,3 +9,11 @@ python-dotenv>=1.0,<2.0
 PyJWT[crypto]>=2.10,<3.0
 httpx>=0.28,<1.0
 python-multipart>=0.0.20,<1.0
+
+# ---- Milestone 2: PDF RAG (loaders, chunking, embeddings, vector store, LLM) ----
+langchain-community>=0.4,<1.0
+langchain-text-splitters>=1.0,<2.0
+langchain-google-genai>=4.0,<5.0
+langchain-chroma>=1.0,<2.0
+chromadb>=1.5,<2.0
+pypdf>=6.0,<7.0

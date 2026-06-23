@@ -1,12 +1,17 @@
 """SmartDocZ FastAPI application entrypoint."""
 from __future__ import annotations
 
-from fastapi import FastAPI
+import logging
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config import get_settings
 from app.routers import analytics, chat, files, sessions, users
 from app.schemas import HealthOut
+
+logger = logging.getLogger("smartdocz")
 
 settings = get_settings()
 
@@ -23,6 +28,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Return a JSON 500 for any unhandled error.
+
+    This handler runs inside the CORS middleware, so the response keeps its
+    Access-Control-Allow-Origin header — otherwise the browser misreports a
+    server error as a CORS failure.
+    """
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    return JSONResponse(status_code=500, content={"detail": "Internal server error."})
 
 
 @app.get("/health", response_model=HealthOut, tags=["health"])
