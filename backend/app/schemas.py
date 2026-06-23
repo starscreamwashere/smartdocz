@@ -23,6 +23,28 @@ class HealthOut(BaseModel):
     service: str = "smartdocz-backend"
 
 
+# ---- Sessions ----
+class SessionCreate(BaseModel):
+    title: str | None = None
+
+
+class SessionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    title: str | None
+    created_at: datetime
+    updated_at: datetime
+    last_message_at: datetime | None
+
+
+class SessionSummary(SessionOut):
+    """Session metadata plus lightweight counts for the history sidebar."""
+
+    message_count: int
+    file_count: int
+
+
 # ---- Files ----
 class FileOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)

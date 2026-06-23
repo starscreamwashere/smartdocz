@@ -6,6 +6,7 @@ to S3/GCS later. Returns a storage URL/path recorded on uploaded_files.
 """
 from __future__ import annotations
 
+import shutil
 import uuid
 from pathlib import Path
 
@@ -24,3 +25,9 @@ def save_upload(
     dest = dest_dir / safe_name
     dest.write_bytes(data)
     return str(dest)
+
+
+def delete_session_dir(user_id: uuid.UUID, session_id: uuid.UUID) -> None:
+    """Remove a session's stored files (best effort)."""
+    target = Path(settings.upload_dir) / str(user_id) / str(session_id)
+    shutil.rmtree(target, ignore_errors=True)

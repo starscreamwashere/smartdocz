@@ -17,6 +17,19 @@ export interface ApiUser {
   updated_at: string;
 }
 
+export interface ApiSession {
+  id: string;
+  title: string | null;
+  created_at: string;
+  updated_at: string;
+  last_message_at: string | null;
+}
+
+export interface ApiSessionSummary extends ApiSession {
+  message_count: number;
+  file_count: number;
+}
+
 export interface ApiFile {
   id: string;
   session_id: string;
@@ -82,6 +95,9 @@ async function request<T>(
     }
     throw new Error(`${res.status}: ${detail}`);
   }
+  if (res.status === 204 || res.headers.get("content-length") === "0") {
+    return undefined as T;
+  }
   return res.json() as Promise<T>;
 }
 
@@ -126,4 +142,13 @@ export const api = {
 
   messages: (token: string, sessionId: string) =>
     request<ApiMessage[]>(`/messages/${sessionId}`, token),
+
+  listSessions: (token: string) =>
+    request<ApiSessionSummary[]>("/sessions", token),
+
+  getSession: (token: string, sessionId: string) =>
+    request<ApiSession>(`/sessions/${sessionId}`, token),
+
+  deleteSession: (token: string, sessionId: string) =>
+    request<void>(`/sessions/${sessionId}`, token, { method: "DELETE" }),
 };
