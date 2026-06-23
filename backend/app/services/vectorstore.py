@@ -59,3 +59,8 @@ def search(query: str, *, session_id: uuid.UUID, k: int) -> list[Document]:
 def delete_file(file_id: uuid.UUID) -> None:
     """Remove all chunks belonging to a file."""
     _store().delete(where={"file_id": str(file_id)})
+
+
+def delete_session(session_id: uuid.UUID) -> None:
+    """Remove all chunks belonging to a session."""
+    _store().delete(where={"session_id": str(session_id)})
