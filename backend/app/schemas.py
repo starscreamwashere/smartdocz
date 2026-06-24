@@ -95,3 +95,21 @@ class MessageOut(BaseModel):
     content: str
     model_provider: str | None
     created_at: datetime
+
+
+# ---- Analytics ----
+class EvaluateRequest(BaseModel):
+    message_id: uuid.UUID
+    reference_answer: str
+
+
+class AnalyticsOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    session_id: uuid.UUID
+    message_id: uuid.UUID
+    faithfulness: float | None
+    answer_relevancy: float | None
+    context_precision: float | None
+    created_at: datetime

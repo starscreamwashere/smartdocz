@@ -7,7 +7,16 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import ChatSession, MemorySummary, Message, UploadedFile, User
+from datetime import datetime
+
+from app.models import (
+    AnalyticsResult,
+    ChatSession,
+    MemorySummary,
+    Message,
+    UploadedFile,
+    User,
+)
 
 
 def create_session(db: Session, user: User, title: str | None = None) -> ChatSession:
@@ -109,3 +118,51 @@ def add_memory_summary(
     db.commit()
     db.refresh(summary)
     return summary
+
+
+# ---- Analytics (Milestone 6) ----
+
+def preceding_user_message(
+    db: Session, session_id: uuid.UUID, before: datetime
+) -> Message | None:
+    """The user question that immediately precedes an assistant message."""
+    return db.scalar(
+        select(Message)
+        .where(
+            Message.session_id == session_id,
+            Message.role == "user",
+            Message.created_at < before,
+        )
+        .order_by(Message.created_at.desc())
+    )
+
+
+def add_analytics_result(
+    db: Session,
+    session_id: uuid.UUID,
+    message_id: uuid.UUID,
+    faithfulness: float,
+    answer_relevancy: float,
+    context_precision: float,
+) -> AnalyticsResult:
+    row = AnalyticsResult(
+        session_id=session_id,
+        message_id=message_id,
+        faithfulness=faithfulness,
+        answer_relevancy=answer_relevancy,
+        context_precision=context_precision,
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+def list_analytics(db: Session, session_id: uuid.UUID) -> list[AnalyticsResult]:
+    return list(
+        db.scalars(
+            select(AnalyticsResult)
+            .where(AnalyticsResult.session_id == session_id)
+            .order_by(AnalyticsResult.created_at.desc())
+        ).all()
+    )
