@@ -71,6 +71,22 @@ export interface ApiMessage {
   created_at: string;
 }
 
+export interface AnalyticsResult {
+  id: string;
+  session_id: string;
+  message_id: string;
+  faithfulness: number | null;
+  answer_relevancy: number | null;
+  context_precision: number | null;
+  created_at: string;
+}
+
+export const METRIC_TARGETS = {
+  faithfulness: 0.85,
+  answer_relevancy: 0.8,
+  context_precision: 0.8,
+} as const;
+
 async function request<T>(
   path: string,
   token: string | null,
@@ -158,4 +174,13 @@ export const api = {
 
   deleteSession: (token: string, sessionId: string) =>
     request<void>(`/sessions/${sessionId}`, token, { method: "DELETE" }),
+
+  evaluate: (token: string, messageId: string, referenceAnswer: string) =>
+    request<AnalyticsResult>("/analytics/evaluate", token, {
+      method: "POST",
+      body: JSON.stringify({ message_id: messageId, reference_answer: referenceAnswer }),
+    }),
+
+  getAnalytics: (token: string, sessionId: string) =>
+    request<AnalyticsResult[]>(`/analytics/${sessionId}`, token),
 };
