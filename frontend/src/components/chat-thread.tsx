@@ -12,6 +12,8 @@ export interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
   sources?: Source[];
+  provider?: string | null;
+  model?: string | null;
 }
 
 export function ChatThread({
@@ -103,6 +105,12 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             </span>
           ))}
         </div>
+      )}
+
+      {!isUser && message.provider && (
+        <span className="mt-1.5 font-mono text-[11px] text-[var(--color-muted)]">
+          via {message.model || message.provider}
+        </span>
       )}
     </div>
   );

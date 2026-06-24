@@ -25,8 +25,9 @@ class Settings(BaseSettings):
     # LLM / vector
     google_api_key: str = ""
     anthropic_api_key: str = ""
-    llm_provider: str = "gemini"
+    llm_provider: str = "gemini"  # primary provider: "gemini" or "claude"
     gemini_model: str = "gemini-2.5-flash"
+    anthropic_model: str = "claude-haiku-4-5"
     embedding_model: str = "models/gemini-embedding-001"
     chroma_persist_dir: str = "./chroma_data"
     chroma_collection: str = "smartdocz_chunks"
