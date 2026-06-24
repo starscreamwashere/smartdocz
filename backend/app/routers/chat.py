@@ -90,7 +90,7 @@ def send_message(
     )
     db.add(assistant_msg)
 
-    # Log the model run (tokens/cost tracked from Milestone 7).
+    # Log the model run (provider used, latency, tokens, estimated cost).
     if answer.has_context:
         db.add(
             ModelRun(
@@ -98,6 +98,8 @@ def send_message(
                 provider=answer.llm.provider,
                 model=answer.llm.model,
                 latency_ms=answer.llm.latency_ms,
+                tokens_used=answer.llm.tokens_used,
+                estimated_cost=answer.llm.estimated_cost,
             )
         )
 

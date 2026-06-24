@@ -114,7 +114,14 @@ export function ChatWorkspace() {
       const res = await api.chat(await token(), sessionId, text);
       setMessages((m) => [
         ...m,
-        { id: res.message_id, role: "assistant", content: res.answer, sources: res.sources },
+        {
+          id: res.message_id,
+          role: "assistant",
+          content: res.answer,
+          sources: res.sources,
+          provider: res.model_provider,
+          model: res.model,
+        },
       ]);
       qc.invalidateQueries({ queryKey: ["sessions"] });
     } catch (e) {
