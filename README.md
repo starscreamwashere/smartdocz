@@ -19,14 +19,14 @@ This repository is a **monorepo**:
 
 The product is built in 8 milestones, each one deployable and demoable:
 
-1. **Project Setup + Auth** ← _you are here_
-2. PDF-only RAG (upload → chunk → embed → retrieve → answer)
-3. Session persistence
-4. Multi-file support
-5. Conversation memory
-6. Analytics (RAGAS)
-7. Claude fallback routing
-8. Deployment
+1. ✅ Project Setup + Auth
+2. ✅ PDF-only RAG (upload → chunk → embed → retrieve → answer)
+3. ✅ Session persistence
+4. ✅ Multi-file support (PDF/DOCX/TXT/CSV/JSON/YouTube)
+5. ✅ Conversation memory
+6. ✅ Analytics (RAGAS-style evaluation)
+7. ✅ Claude fallback routing
+8. ✅ Deployment (Vercel + Railway + Qdrant Cloud) — see [DEPLOYMENT.md](DEPLOYMENT.md)
 
 ## Milestone 1 — what's implemented
 
