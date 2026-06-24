@@ -13,6 +13,8 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 
+from langchain_core.documents import Document
+
 from app.config import get_settings
 from app.services import vectorstore
 from app.services.chunking import chunk_documents
@@ -45,6 +47,20 @@ document — do not invent facts. Be concise and cite page numbers where helpful
 _NO_CONTEXT = "I could not find relevant information in the uploaded documents."
 
 
+def ingest_documents(
+    docs: list[Document],
+    *,
+    user_id: uuid.UUID,
+    session_id: uuid.UUID,
+    file_id: uuid.UUID,
+) -> int:
+    """Chunk → embed → store pre-loaded documents. Returns chunks stored."""
+    chunks = chunk_documents(
+        docs, user_id=user_id, session_id=session_id, file_id=file_id
+    )
+    return vectorstore.add_chunks(chunks, file_id=file_id)
+
+
 def ingest_file(
     path: str,
     file_type: str,
@@ -53,12 +69,9 @@ def ingest_file(
     session_id: uuid.UUID,
     file_id: uuid.UUID,
 ) -> int:
-    """Load → chunk → embed → store. Returns the number of chunks stored."""
+    """Load a file → chunk → embed → store. Returns the number of chunks stored."""
     docs = load_document(path, file_type)
-    chunks = chunk_documents(
-        docs, user_id=user_id, session_id=session_id, file_id=file_id
-    )
-    return vectorstore.add_chunks(chunks, file_id=file_id)
+    return ingest_documents(docs, user_id=user_id, session_id=session_id, file_id=file_id)
 
 
 def _build_prompt(question: str, contexts: list[str]) -> str:

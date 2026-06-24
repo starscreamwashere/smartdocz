@@ -19,7 +19,7 @@ from app.crud import get_owned_session
 from app.database import get_db
 from app.models import Message, ModelRun
 from app.schemas import ChatRequest, ChatResponse, MessageOut, SourceOut
-from app.services.embeddings import MissingApiKeyError, ProviderError
+from app.services.embeddings import MissingApiKeyError, ProviderError, QuotaExceededError
 from app.services.rag import answer_question
 
 router = APIRouter(tags=["chat"])
@@ -43,6 +43,8 @@ def send_message(
         answer = answer_question(body.message, session_id=session.id)
     except MissingApiKeyError as exc:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc)) from exc
+    except QuotaExceededError as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc)) from exc
     except ProviderError as exc:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(exc)) from exc
 

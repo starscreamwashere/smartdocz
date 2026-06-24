@@ -134,6 +134,13 @@ export const api = {
     return uploadRequest<UploadResult>("/upload", token, form);
   },
 
+  uploadYoutube: (token: string, youtubeUrl: string, sessionId?: string) => {
+    const form = new FormData();
+    form.append("youtube_url", youtubeUrl);
+    if (sessionId) form.append("session_id", sessionId);
+    return uploadRequest<UploadResult>("/upload", token, form);
+  },
+
   chat: (token: string, sessionId: string, message: string) =>
     request<ChatResult>("/chat", token, {
       method: "POST",
